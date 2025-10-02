@@ -1,17 +1,16 @@
-# Socks Proxy Server On Azure
+# Socks Proxy Server on Azure
 
-# Requirements
+This project uses Azure and Terraform to create an Ubuntu VM and provides a local SOCKS5 proxy via SSH Dynamic Port Forwarding (ssh -D).
 
-- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?view=azure-cli-latest&pivots=apt)
+The server only needs to have SSH enabled (openssh-server installed and allowed through the firewall).
 
-- [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
+## Requirements
 
-- [Azure Free Account](https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account?icid=azurefreeaccount#freeservices)
+- Azure CLI
+- Terraform
+- An Azure subscription (confirm region and cost)
 
-
-# Build a VM Server
-
-## Login
+## 1) Deploy — Create the VM
 
 ```bash
 az login
@@ -20,19 +19,9 @@ terraform plan
 terraform apply
 ```
 
+## 2) Client PC (Linux Ubuntu 24.04) — Create a local SOCKS5
 
-
-# Client PC Setting (Linux Ubuntu24):
-
-1. Install Proxychains4
-
-```bash
-sudo apt update && sudo apt install proxychains4 -y
-```
-
-```bash
-printf 'socks5 127.0.0.1 1080\n' | sudo tee -a /etc/proxychains4.conf > /dev/null
-```
+### Obtain the private key and start SSH dynamic forwarding:
 
 ```bash
 terraform output -raw ssh_private_key > proxy-ssh-key
@@ -40,28 +29,29 @@ chmod 600 proxy-ssh-key
 ssh -i proxy-ssh-key azureuser@$(terraform output -raw public_ip_address) -fN -D 1080
 ```
 
-# Broswer Setting
+Note: this command opens a local SOCKS5 port (127.0.0.1:1080) and forwards traffic through the SSH tunnel to the VM.
 
-## Firefox Setting：
+## 3) Browser configuration
 
-Preferences -> Proxy -> Settings -> Manual proxy configuration
+- Firefox: Preferences → Proxy → Settings → Manual proxy configuration
+  - SOCKS Host: 127.0.0.1
+  - Port: 1080
+  - Select SOCKS v5
+  - Check "Proxy DNS when using SOCKS v5"
 
-- SOCKS Host: 127.0.0.1
-- Port: 1080
-- Checked: "SOCKS v5", "Proxy DNS when using SOCKS v5"
-- Checked: "Proxy DNS when using SOCKS v5"
+- Chrome:
 
-## Chrome:
-
+```bash
 google-chrome --proxy-server="socks5://127.0.0.1:1080"
+```
 
-# Stop Proxy
+## 4) Stop the proxy
 
 ```bash
 pkill -f "ssh .* -D 1080"
 ```
 
-# Clean up
+## 5) Clean up — Destroy resources
 
 ```bash
 terraform destroy
