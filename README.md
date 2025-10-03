@@ -1,58 +1,69 @@
 # Socks Proxy Server on Azure
 
-This project uses Azure and Terraform to create an Ubuntu VM and provides a local SOCKS5 proxy via SSH Dynamic Port Forwarding (ssh -D).
+## Overview
 
-The server only needs to have SSH enabled (openssh-server installed and allowed through the firewall).
+This project automates the provisioning of a lightweight SOCKS5 proxy server on Microsoft Azure using Terraform. It creates an Ubuntu virtual machine configured for SSH Dynamic Port Forwarding, enabling secure internet traffic routing via a local SOCKS proxy.
 
-## Requirements
 
-- Azure CLI
-- Terraform
-- An Azure subscription (confirm region and cost)
+## Prerequisites
 
-## 1) Deploy — Create the VM
+- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?view=azure-cli-latest&pivots=apt) installed and logged in (`az login`).  
+- [Terraform CLI](https://developer.hashicorp.com/terraform/install)
+- An active Azure subscription.
+
+## Deployment
 
 ```bash
-az login
+# Initialize Terraform
 terraform init
+
+# Review changes
 terraform plan
-terraform apply
+
+# Provision infrastructure
+terraform apply --auto-approve
 ```
 
-## 2) Client PC (Linux Ubuntu 24.04) — Create a local SOCKS5
+## Connect and Use Proxy
 
-### Obtain the private key and start SSH dynamic forwarding:
+1. **Retrieve SSH key**  
+   ```bash
+   terraform output -raw ssh_private_key > proxy_key.pem
+   chmod 600 proxy_key.pem
+   ```
 
-```bash
-terraform output -raw ssh_private_key > proxy-ssh-key
-chmod 600 proxy-ssh-key
-ssh -i proxy-ssh-key azureuser@$(terraform output -raw public_ip_address) -fN -D 1080
-```
+2. **Start SOCKS5 tunnel**  
+   ```bash
+   ssh -i proxy_key.pem -fN -D 1080 ${TF_VAR_admin_username}@$(terraform output -raw public_ip_address)
+   ```
 
-Note: this command opens a local SOCKS5 port (127.0.0.1:1080) and forwards traffic through the SSH tunnel to the VM.
+3. **Verify**  
+   Ensure local port 1080 is listening:  
+   ```bash
+   ss -ln | grep 1080
+   ```
 
-## 3) Browser configuration
+## Browser Configuration
 
-- Firefox: Preferences → Proxy → Settings → Manual proxy configuration
-  - SOCKS Host: 127.0.0.1
-  - Port: 1080
-  - Select SOCKS v5
-  - Check "Proxy DNS when using SOCKS v5"
+- **Firefox**  
+  Preferences → Network Settings → Manual proxy configuration  
+  - SOCKS Host: `127.0.0.1`  
+  - Port: `1080`  
+  - SOCKS v5 & Proxy DNS
 
-- Chrome:
+- **Chrome**  
+  ```bash
+  google-chrome --proxy-server="socks5://127.0.0.1:1080"
+  ```
 
-```bash
-google-chrome --proxy-server="socks5://127.0.0.1:1080"
-```
+## Stopping and Cleanup
 
-## 4) Stop the proxy
+- Stop the SSH tunnel:  
+  ```bash
+  pkill -f "ssh .* -D 1080"
+  ```
 
-```bash
-pkill -f "ssh .* -D 1080"
-```
-
-## 5) Clean up — Destroy resources
-
-```bash
-terraform destroy
-```
+- Destroy Azure resources:  
+  ```bash
+  terraform destroy --auto-approve
+  ```
