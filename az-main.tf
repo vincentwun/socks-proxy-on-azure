@@ -1,15 +1,15 @@
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.12.0"
 
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.100"
+      version = ">= 4.40.0"
     }
     // For generating SSH key
     tls = {
       source  = "hashicorp/tls"
-      version = "~> 4.0"
+      version = ">= 4.0.0"
     }
   }
 }
