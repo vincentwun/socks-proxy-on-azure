@@ -16,6 +16,7 @@ This project automates the provisioning of a lightweight SOCKS5 proxy server on 
 ```bash
 git clone https://github.com/vincentwun/socks-proxy-on-azure.git
 cd socks-proxy-on-azure
+# Install required tools
 ./install.sh
 ```
 
