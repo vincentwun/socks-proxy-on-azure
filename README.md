@@ -11,6 +11,14 @@ This project automates the provisioning of a lightweight SOCKS5 proxy server on 
 - [Terraform CLI](https://developer.hashicorp.com/terraform/install)
 - An active Azure subscription.
 
+## Quick Start
+
+```bash
+git clone https://github.com/vincentwun/socks-proxy-on-azure.git
+cd socks-proxy-on-azure
+./install.sh
+```
+
 ## Deployment
 
 ```bash
